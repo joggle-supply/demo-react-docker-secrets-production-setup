@@ -16,7 +16,8 @@ react-docker-secrets/
 │   ├── docker-compose.yml    # Development Swarm config
 │   ├── docker-entrypoint.sh  # Development entrypoint
 │   ├── build.sh             # Development build script
-│   ├── deploy-swarm.sh       # Development deployment
+│   ├── deploy-swarm.sh       # Stack deployment (docker-compose.yml)
+│   ├── deploy-service.sh     # Service deployment (docker service create)
 │   ├── secrets.json         # Configuration file
 │   ├── src/                 # React source code
 │   ├── public/              # React public files
@@ -32,7 +33,8 @@ react-docker-secrets/
 │   ├── docker-entrypoint.sh # Production entrypoint
 │   ├── nginx.conf           # Nginx configuration
 │   ├── build.sh            # Production build script
-│   ├── deploy.sh           # Production deployment
+│   ├── deploy.sh            # Stack deployment (docker-compose.yml)
+│   ├── deploy-service.sh    # Service deployment (docker service create)
 │   ├── secrets.json        # Configuration file
 │   ├── src/                # React source code
 │   ├── public/             # React public files
@@ -62,15 +64,68 @@ react-docker-secrets/
 ```bash
 cd development-only
 ./build.sh                    # Build development image
-./deploy-swarm.sh             # Deploy with Docker secrets
+
+# Choose deployment method:
+./deploy-swarm.sh             # Option 1: Stack deployment (docker-compose.yml)
+./deploy-service.sh           # Option 2: Service deployment (docker service create)
 ```
 
 ### Production Environment  
 ```bash
 cd production-only
 ./build.sh                    # Build production image
-./deploy.sh                   # Deploy to production
+
+# Choose deployment method:
+./deploy.sh                   # Option 1: Stack deployment (docker-compose.yml)
+./deploy-service.sh           # Option 2: Service deployment (docker service create)
 ```
+
+## 🔄 Deployment Methods
+
+This project provides **two deployment approaches** for maximum flexibility:
+
+### Method 1: Docker Stack Deploy (Recommended)
+- **Uses**: `docker stack deploy -c docker-compose.yml`
+- **Benefits**: Declarative, version-controlled, team-friendly
+- **Best for**: Complex deployments, team environments, CI/CD pipelines
+- **Files**: Uses docker-compose.yml for configuration
+
+### Method 2: Docker Service Create (Alternative)
+- **Uses**: `docker service create` with command-line parameters
+- **Benefits**: Direct control, simpler for single services, scriptable
+- **Best for**: Simple deployments, dynamic configurations, learning
+- **Files**: Uses shell scripts with direct Docker commands
+
+### 📊 Deployment Method Comparison
+
+| Feature | Stack Deploy | Service Create |
+|---------|-------------|----------------|
+| **Configuration** | docker-compose.yml | Command-line parameters |
+| **Version Control** | ✅ Easy to track | ❌ Harder to version |
+| **Readability** | ✅ Self-documenting | ❌ Long command lines |
+| **Team Collaboration** | ✅ Easy to review | ❌ Script-based |
+| **Multi-service** | ✅ Natural fit | ❌ Multiple commands |
+| **CI/CD Integration** | ✅ Standard approach | ⚠️ Custom scripts |
+| **Learning Curve** | ⚠️ Requires compose knowledge | ✅ Direct Docker commands |
+| **Dynamic Configuration** | ⚠️ Limited | ✅ Easy to script |
+| **Rollback** | ✅ Built-in | ⚠️ Manual process |
+| **Single Service** | ⚠️ Overkill | ✅ Perfect fit |
+
+### 🎯 When to Use Each Method:
+
+**Use Stack Deploy when:**
+- Working with teams
+- Need version-controlled deployments
+- Using CI/CD pipelines
+- Managing multiple services
+- Want declarative configuration
+
+**Use Service Create when:**
+- Single service deployment
+- Dynamic configuration needs
+- Learning Docker Swarm
+- Scripting deployments
+- Direct control preferred
 
 ## 📋 Configuration Priority
 
@@ -198,12 +253,17 @@ echo 'production' | docker secret create REACT_APP_ENVIRONMENT -
 
 **Run command:**
 ```bash
-# Deploy with secrets support
 cd development-only
+
+# Method 1: Stack deployment (Recommended)
 ./deploy-swarm.sh
 
-# Or manually
-docker stack deploy -c docker-compose.yml react-app-stack
+# Method 2: Service deployment (Alternative) 
+./deploy-service.sh
+
+# Or manually:
+docker stack deploy -c docker-compose.yml react-app-stack    # Stack method
+docker service create --name react-app-dev --secret REACT_APP_NAME ...  # Service method
 ```
 
 **How values are stored:**
@@ -606,14 +666,48 @@ cd production-only
 ```bash
 cd development-only
 ./build.sh              # Build development image
-./deploy-swarm.sh        # Deploy with dev features
+
+# Choose your deployment method:
+./deploy-swarm.sh        # Stack deployment (recommended)
+./deploy-service.sh      # Service deployment (alternative)
 ```
 
 ### Production Deployment
 ```bash
 cd production-only
 ./build.sh              # Build production image
-./deploy.sh             # Deploy with production features
+
+# Choose your deployment method:
+./deploy.sh             # Stack deployment (recommended)
+./deploy-service.sh     # Service deployment (alternative)
+```
+
+### 🔍 Deployment Method Details
+
+#### Stack Deployment Commands:
+```bash
+# Development
+docker stack deploy -c docker-compose.yml react-app-stack
+docker stack ps react-app-stack
+docker service logs react-app-stack_react-app -f
+
+# Production  
+docker stack deploy -c docker-compose.yml react-app-production
+docker stack ps react-app-production
+docker service logs react-app-production_react-app -f
+```
+
+#### Service Deployment Commands:
+```bash
+# Development
+docker service create --name react-app-dev --replicas 2 --secret REACT_APP_NAME ...
+docker service ps react-app-dev
+docker service logs react-app-dev -f
+
+# Production
+docker service create --name react-app-production --replicas 3 --secret REACT_APP_NAME ...
+docker service ps react-app-production  
+docker service logs react-app-production -f
 ```
 
 ## ✅ Testing Results
