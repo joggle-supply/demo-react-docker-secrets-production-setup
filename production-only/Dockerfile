@@ -23,7 +23,7 @@ RUN addgroup -g 1001 -S nodejs && \
     adduser -S reactuser -u 1001
 
 # Install runtime dependencies
-RUN apk add --no-cache bash && \
+RUN apk add --no-cache bash curl && \
     rm -rf /var/cache/apk/*
 
 # Copy built React app
@@ -34,10 +34,21 @@ COPY --from=builder /app/secrets.json /app/secrets.json
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# Set proper permissions
+# Set proper permissions and create nginx directories
 RUN chmod +x /docker-entrypoint.sh && \
     chown -R reactuser:nodejs /app && \
-    chown -R reactuser:nodejs /usr/share/nginx/html
+    chown -R reactuser:nodejs /usr/share/nginx/html && \
+    chown -R reactuser:nodejs /var/cache/nginx && \
+    chown -R reactuser:nodejs /var/log/nginx && \
+    chown -R reactuser:nodejs /etc/nginx && \
+    touch /var/run/nginx.pid && \
+    chown reactuser:nodejs /var/run/nginx.pid && \
+    mkdir -p /var/cache/nginx/client_temp && \
+    mkdir -p /var/cache/nginx/proxy_temp && \
+    mkdir -p /var/cache/nginx/fastcgi_temp && \
+    mkdir -p /var/cache/nginx/uwsgi_temp && \
+    mkdir -p /var/cache/nginx/scgi_temp && \
+    chown -R reactuser:nodejs /var/cache/nginx
 
 # Switch to non-root user
 USER reactuser
