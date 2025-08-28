@@ -11,6 +11,7 @@ echo ""
 
 # Initialize swarm if not already initialized
 echo "Initializing Docker Swarm..."
+echo "→ docker swarm init"
 docker swarm init 2>/dev/null || echo "Swarm already initialized"
 
 # Load required secrets from configuration
@@ -21,12 +22,14 @@ if [ ! -f "$SECRETS_CONFIG" ]; then
 fi
 
 # Extract secrets from JSON (simple parsing)
+echo "→ grep -o '\"[^\"]*\"' \"$SECRETS_CONFIG\" | grep -v '\"secrets\"' | tr -d '\"'"
 REQUIRED_SECRETS=$(grep -o '"[^"]*"' "$SECRETS_CONFIG" | grep -v '"secrets"' | tr -d '"')
 
 echo "Checking required secrets from configuration..."
 MISSING_SECRETS=""
 
 for secret in $REQUIRED_SECRETS; do
+    echo "→ docker secret inspect $secret"
     if ! docker secret inspect "$secret" >/dev/null 2>&1; then
         MISSING_SECRETS="$MISSING_SECRETS $secret"
     else
@@ -54,7 +57,9 @@ fi
 # Remove existing service if present
 echo ""
 echo "Removing existing service if present..."
+echo "→ docker service rm react-app-dev"
 docker service rm react-app-dev 2>/dev/null || true
+echo "→ sleep 3"
 sleep 3
 
 # Build secret arguments dynamically
@@ -64,6 +69,18 @@ for secret in $REQUIRED_SECRETS; do
 done
 
 echo "Creating service with docker service create..."
+echo "→ docker service create \\"
+echo "    --name react-app-dev \\"
+echo "    --replicas 2 \\"
+echo "    --publish published=3000,target=3000 \\"
+echo "    $SECRET_ARGS \\"
+echo "    --update-parallelism 1 \\"
+echo "    --update-delay 10s \\"
+echo "    --restart-condition on-failure \\"
+echo "    --restart-delay 5s \\"
+echo "    --restart-max-attempts 3 \\"
+echo "    --restart-window 120s \\"
+echo "    react-docker-secrets:latest"
 
 # Create the service using docker service create
 docker service create \

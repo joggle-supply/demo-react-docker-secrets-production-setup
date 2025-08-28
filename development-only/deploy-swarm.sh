@@ -11,11 +11,14 @@ echo ""
 
 # Initialize swarm if not already initialized
 echo "Initializing Docker Swarm..."
+echo "→ docker swarm init"
 docker swarm init 2>/dev/null || echo "Swarm already initialized"
 
 # Remove existing stack
 echo "Removing existing stack if present..."
+echo "→ docker stack rm react-app-stack"
 docker stack rm react-app-stack 2>/dev/null || true
+echo "→ sleep 3"
 sleep 3
 
 # Load required secrets from configuration
@@ -26,12 +29,14 @@ if [ ! -f "$SECRETS_CONFIG" ]; then
 fi
 
 # Extract secrets from JSON (simple parsing)
+echo "→ grep -o '\"[^\"]*\"' \"$SECRETS_CONFIG\" | grep -v '\"secrets\"' | tr -d '\"'"
 REQUIRED_SECRETS=$(grep -o '"[^"]*"' "$SECRETS_CONFIG" | grep -v '"secrets"' | tr -d '"')
 
 echo "Checking required secrets from configuration..."
 MISSING_SECRETS=""
 
 for secret in $REQUIRED_SECRETS; do
+    echo "→ docker secret inspect $secret"
     if ! docker secret inspect "$secret" >/dev/null 2>&1; then
         MISSING_SECRETS="$MISSING_SECRETS $secret"
     else
@@ -59,6 +64,7 @@ fi
 # Deploy the stack
 echo ""
 echo "Deploying stack to Docker Swarm..."
+echo "→ docker stack deploy -c docker-compose.yml react-app-stack"
 docker stack deploy -c docker-compose.yml react-app-stack
 
 echo ""
