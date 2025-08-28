@@ -4,6 +4,7 @@ echo "Building production React Docker image..."
 echo "========================================"
 
 # Build production image
+echo "→ docker build -t react-docker-secrets:production -f Dockerfile ."
 docker build -t react-docker-secrets:production -f Dockerfile .
 
 echo ""

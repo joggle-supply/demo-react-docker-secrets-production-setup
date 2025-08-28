@@ -20,6 +20,7 @@ echo ""
 
 # Initialize swarm if not already initialized
 echo -e "${YELLOW}Initializing Docker Swarm...${NC}"
+echo "→ docker swarm init"
 docker swarm init 2>/dev/null || echo "Swarm already initialized"
 
 # Load required secrets from configuration
@@ -30,12 +31,14 @@ if [ ! -f "$SECRETS_CONFIG" ]; then
 fi
 
 # Extract secrets from JSON
+echo "→ grep -o '\"[^\"]*\"' \"$SECRETS_CONFIG\" | grep -v '\"secrets\"' | tr -d '\"'"
 REQUIRED_SECRETS=$(grep -o '"[^"]*"' "$SECRETS_CONFIG" | grep -v '"secrets"' | tr -d '"')
 
 echo -e "${YELLOW}Checking required secrets for production...${NC}"
 MISSING_SECRETS=""
 
 for secret in $REQUIRED_SECRETS; do
+    echo "→ docker secret inspect $secret"
     if ! docker secret inspect "$secret" >/dev/null 2>&1; then
         MISSING_SECRETS="$MISSING_SECRETS $secret"
     else
@@ -58,7 +61,9 @@ fi
 
 # Remove existing service if present
 echo -e "${YELLOW}Removing existing service if present...${NC}"
+echo "→ docker service rm react-app-production"
 docker service rm react-app-production 2>/dev/null || true
+echo "→ sleep 5"
 sleep 5
 
 # Build secret arguments dynamically
@@ -68,6 +73,31 @@ for secret in $REQUIRED_SECRETS; do
 done
 
 echo -e "${GREEN}Creating production service with docker service create...${NC}"
+echo "→ docker service create \\"
+echo "    --name react-app-production \\"
+echo "    --replicas 3 \\"
+echo "    --publish published=80,target=80 \\"
+echo "    $SECRET_ARGS \\"
+echo "    --update-parallelism 1 \\"
+echo "    --update-delay 10s \\"
+echo "    --update-failure-action rollback \\"
+echo "    --restart-condition on-failure \\"
+echo "    --restart-delay 5s \\"
+echo "    --restart-max-attempts 3 \\"
+echo "    --restart-window 120s \\"
+echo "    --limit-cpu 0.5 \\"
+echo "    --limit-memory 512M \\"
+echo "    --reserve-cpu 0.25 \\"
+echo "    --reserve-memory 256M \\"
+echo "    --health-cmd \"curl -f http://localhost/health || exit 1\" \\"
+echo "    --health-interval 30s \\"
+echo "    --health-timeout 10s \\"
+echo "    --health-retries 3 \\"
+echo "    --health-start-period 40s \\"
+echo "    --log-driver json-file \\"
+echo "    --log-opt max-size=10m \\"
+echo "    --log-opt max-file=3 \\"
+echo "    react-docker-secrets:production"
 
 # Create the production service using docker service create
 docker service create \

@@ -57,6 +57,7 @@ react-docker-secrets/
 - **JSON-Driven Configuration** - Scalable approach using `secrets.json` 
 - **Priority-Based Loading** - Docker Secrets > Environment Variables > Defaults
 - **Legacy Code Compatible** - Runtime polyfilling of `process.env` for existing applications
+- **Command Visibility** - All scripts show executed commands with `→` prefix for debugging and transparency
 
 ## 🚀 Quick Start
 
@@ -567,6 +568,18 @@ const appName = process.env.REACT_APP_NAME || 'MyApp';
 ---
 
 ## 🔍 Debugging & Troubleshooting
+
+### Script Command Visibility
+All deployment and build scripts show the exact commands being executed:
+```bash
+./deploy-service.sh
+# Output shows:
+# → docker swarm init
+# → docker secret inspect REACT_APP_NAME
+# → docker service create \
+#     --name react-app-dev \
+#     --secret REACT_APP_NAME ...
+```
 
 ### Check Configuration Loading
 ```bash
