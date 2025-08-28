@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  react-app:
+    image: react-docker-secrets:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    secrets:
+      - REACT_APP_NAME
+      - REACT_APP_API_URL
+      - REACT_APP_ENVIRONMENT
+      - REACT_APP_VERSION
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+
+secrets:
+  REACT_APP_NAME:
+    external: true
+  REACT_APP_API_URL:
+    external: true
+  REACT_APP_ENVIRONMENT:
+    external: true
+  REACT_APP_VERSION:
+    external: true
